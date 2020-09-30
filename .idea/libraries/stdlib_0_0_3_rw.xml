@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="stdlib-0.0.3-rw">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/src/stdlib-0.0.3-rw.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,5 +1,4 @@
 public interface WarriorTypeInterface_23605383 {
-
     void performSpecialAbility();
     void specialAbilityCompleted();
     public void downRight(int column , int row);
@@ -11,8 +10,35 @@ public interface WarriorTypeInterface_23605383 {
     public void upLeft(int column ,int row);
     public void downLeft(int column, int row);
     public void incrementAge();
-
-
-
-
+    public void setPlayerRow(int xValue);
+    public double getHealth();
+    public void setHealth(double health);
+    public double getOffensePower();
+    public void setOffensePower(double offensePower);
+    public double getDefenseStrength();
+    public void setDefenseStrength(double defenseStrength);
+    public int getWeaponInventory();
+    public void setWeaponInventory(int weaponInventory);
+    public int getPlayerRow();
+    public int getPlayerColumn();
+    public void setPlayerColumn(int yValue);
+    public String getMoves();
+    public void setMoves(String moves);
+    public void setWeaponCarry(int weaponCarry);
+    public int getWeaponCarry();
+    public String getType();
+    public void incrementCountSpecialAbility();
+    public void setPreviousDefenseStrength(double previousDefenseStrength);
+    public double getPreviousDefenseStrength();
+    public void setPreviousOffensiveStrength(double previousOffensiveStrength);
+    public double getPreviousOffensiveStrength();
+    public void setCountSpecialAbility(int countSpecialAbility);
+    public boolean isPerformedAbility();
+    public void setPerformedAbility(boolean performedAbility);
+    public void setFightDefense(double fightDefense);
+    public double getFightDefense();
+    public void setFightOffensive(double fightOffensive);
+    public double getFightOffensive();
+    public int getAge();
+    public int getID();
 }

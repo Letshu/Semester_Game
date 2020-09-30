@@ -1,12 +1,12 @@
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.jetbrains.annotations.NotNull;
-import princeton.In;
 
 public class Game_23605383 {
 	private static int Orow ; //number of rows in the game board
 	private static int Ocolumn; //number of columns in the game
 	private static  int noGame; //number of iterations in the game
+	private static String[][] gameBoard;
+	public static boolean NoPiece= false; //This variable is helped to check that there's no piece on the board
 	/*
 	Arrays below is to store the defense strength and offense strength of each warrior at the start,
 	of the game and after each iterations. It will be updated constantly.
@@ -23,13 +23,23 @@ public class Game_23605383 {
 	public static AirWarrior_23605383[] air;
 	public static String PieceType="";
 	public static int numberWarriows;
+	public static WarriorTypeInterface_23605383[] template;
+	public static boolean[] specailAbilityCheck;
+	public static boolean winner;
 	public static void main(String[] args) {
+		try{
+			In gameFile = new In(args[0]);
+			int outputVersion = Integer.parseInt(args[1]);
+		}catch (Exception e){
+			System.out.println("Usage: < program name > < name of the game setup file > .txt");
+			System.exit(0);
+		}
         In gameFile = new In(args[0]);
-        int outputVersion = Integer.parseInt(args[1]);       
+        int outputVersion = Integer.parseInt(args[1]);
         Orow= gameFile.readInt();
         Ocolumn = gameFile.readInt();
         noGame = gameFile.readInt();
-        String[][] gameBoard = new String[Orow][Ocolumn];
+        gameBoard = new String[Orow][Ocolumn];
         FillArray(gameBoard);
         gameFile.readLine();
         gameFile.readString();
@@ -44,7 +54,8 @@ public class Game_23605383 {
         OffensePower = new double[numberWarriows];
         DefenseStrength = new double[numberWarriows];
         warriorMoves = new String[numberWarriows];
-        WarriorTypeInterface_23605383[] template = new WarriorTypeInterface_23605383[numberWarriows];
+        template = new WarriorTypeInterface_23605383[numberWarriows];
+        specailAbilityCheck = new boolean[numberWarriows];
         /*
         I used ArrayList for here because I don't know how many of these pieces are in the board before hand
          */
@@ -599,13 +610,20 @@ public class Game_23605383 {
 			}
 		}
 		placeWarriors(); //this intializes my warrior array for the final time so it can be printed out
-		UsefulMethods_23605383.sortWarrior(warrior); // this sorts the warriors in order if they're in the same cell according to ID
 		Restorer_23605383[] r = new Restorer_23605383[restorer.size()];
 		r = restorer.toArray(r);
 		Weapon_23605383[] w = new Weapon_23605383[weapon.size()];
 		w= weapon.toArray(w);
 		Potion_23605383[] q = new Potion_23605383[potion.size()];
 		q = potion.toArray(q);
+		convertInterface(warrior);
+		UsefulMethods_23605383.sortWarrior(template); // this sorts the warriors in order if they're in the same cell according to ID
+		UsefulMethods_23605383.sortInterfaceByRow(template); //this sorts out the warriors in the same row by column
+		CheckZeroWarrior();
+		checkWinner();
+		if(winner){
+			printGame(gameBoard);
+		}
 		/*
 		I will use 3 for loops.
 		The first loop is for how many iterations are in a game.
@@ -620,8 +638,8 @@ public class Game_23605383 {
 		The Game play will occur below
 		The steps are setup in such a way that it follows the 10 steps of the requirements
 		 */
-		if ((noGame>0)){
-			for(int i =0;i< noGame;i++){
+		if ((noGame>0) && !NoPiece && !winner){
+			for(int i =1;i<= noGame;i++){
 				if (CheckNumberPieces(gameBoard)){
 					//This checks that there's exactly one type of piece in a cell
 					piecesOverload = true;
@@ -630,8 +648,36 @@ public class Game_23605383 {
 					//this checks that there's no more than 10 warriors in a cell at a time
 					warriorOverload = true;
 					break; }
-				UsefulMethods_23605383.waterNeighbor(gameBoard); // this check if there's sufficient warriors in water piece neighborhood
-				UsefulMethods_23605383.AddWater(gameBoard); //this adds water piece where there's no water piece
+				defenseAndoffenseStrength(); // this saves the defense
+				UsefulMethods_23605383.sortWarrior(template); // this sorts the warriors in order if they're in the same cell according to ID
+				UsefulMethods_23605383.sortInterfaceByRow(template);
+				CheckZeroWarrior();
+				checkWinner();
+				if(winner){
+					break;
+				}
+				printGame(gameBoard);
+				UsefulMethods_23605383.printWarrior(template);
+				AddorRemoveHeath(); //This method adds or removes warrior health according to water piece
+				water(); // this performs water piece
+				specialAbility();
+				IncrementSpecialAbility();
+				specialAbilityCompleted();
+				defenseStrengthAdjust();
+				warriorBattle();
+				removeWarrior();
+				ageIncrement();
+				ageDefenseAdjust();
+				warriorMove(i);
+				updatedGameBoard();
+				addWarrior();
+				if(UsefulMethods_23605383.checkNumberWarriors(gameBoard)){
+					//this checks that there's no more than 10 warriors in a cell at a time
+					warriorOverload = true;
+					break;
+				}
+				UsefulMethods_23605383.sortWarrior(template); // this sorts the warriors in order if they're in the same cell according to ID
+				UsefulMethods_23605383.sortInterfaceByRow(template);
 			}
 		}
 		if(piecesOverload){
@@ -644,19 +690,171 @@ public class Game_23605383 {
 		if (warriorOverload){
 			System.out.println("Error: warrior limit exceeded at cell "+UsefulMethods_23605383.WarriorRow+" "+UsefulMethods_23605383.WarriorColumn);
 		}
-		int ply =0;
+		if(winner){
+			System.out.println("A warrior has been proven victor!");
+		}
 		if (outputVersion == 0) {
 			// warrior statistics mode
-			System.out.println("I'm in here");
+			if(!warriorOverload && !piecesOverload && !winner && !NoPiece){
+				UsefulMethods_23605383.printWarrior(template);
+			}
         } 
         else if (outputVersion == 1) {
             // warrior statistics with visualization mode
-			printGame(gameBoard);
-			UsefulMethods_23605383.printWarrior(warrior);
+			if(!warriorOverload && !piecesOverload && !winner && !NoPiece){
+				printGame(gameBoard);
+				UsefulMethods_23605383.printWarrior(template);
+			}
         }
     }
-    
-    public static void printBoard( String[][] temp) {
+	private static void removeWarrior() {
+		ArrayList<WarriorTypeInterface_23605383> temp= new ArrayList<WarriorTypeInterface_23605383>();
+		for (int i = 0; i < template.length; i++) {
+			if(template[i].getHealth() <= 0 && !template[i].isPerformedAbility()){
+				System.out.println("A warrior has left the game!");
+			}
+			if (template[i].getHealth()>0){
+				temp.add(template[i]);
+			}
+		}
+		template = new WarriorTypeInterface_23605383[temp.size()];
+		template = temp.toArray(template);
+	}
+	private static void updatedGameBoard() {
+		//This method removes all the warriors inside the gameBoard array
+		for (int i = 0; i <Orow ; i++) {
+			for (int j = 0; j < Ocolumn; j++) {
+				if(gameBoard[i][j].contains("W")){
+					gameBoard[i][j] = gameBoard[i][j].replaceAll("W","");
+				}
+				if(gameBoard[i][j].contains("S")){
+					gameBoard[i][j] = gameBoard[i][j].replaceAll("S","");
+				}
+				if(gameBoard[i][j].contains("F")){
+					gameBoard[i][j] = gameBoard[i][j].replaceAll("F","");
+				}
+				if(gameBoard[i][j].contains("A")){
+					gameBoard[i][j] = gameBoard[i][j].replaceAll("A","");
+				}
+			}
+		}
+	}
+	public static void addWarrior(){
+		//This method adds warriors in gameBoard array
+		for (int i = 0; i <template.length ; i++) {
+			if(template[i] != null){
+				if(template[i].getType().equals("Stone")){
+					gameBoard[template[i].getPlayerRow()][template[i].getPlayerColumn()] +="S";
+				}
+				if(template[i].getType().equals("Water")){
+					gameBoard[template[i].getPlayerRow()][template[i].getPlayerColumn()] +="W";
+				}
+				if(template[i].getType().equals("Air")){
+					gameBoard[template[i].getPlayerRow()][template[i].getPlayerColumn()] +="A";
+				}
+				if(template[i].getType().equals("Flame")){
+					gameBoard[template[i].getPlayerRow()][template[i].getPlayerColumn()] +="F";
+				}
+			}
+		}
+	}
+	private static void checkWinner() {
+		int count=0;
+		for (int i = 0; i <Orow ; i++) {
+			for (int j = 0; j <Ocolumn ; j++) {
+				count = count+ UsefulMethods_23605383.NumberOfWarriors(gameBoard[i][j]);
+			}
+		}
+		if (count==1){
+			winner = true;
+		}
+	}
+	public static void warriorMove(int i){
+		int index =i-1;
+		for (int j = 0; j <template.length ; j++) {
+			if (!(template[j] == null)){
+				if(template[j].getMoves().length()>index){
+					char move = template[j].getMoves().charAt(index);
+					switch(move){
+						case 'd': //right
+							template[j].rightMove(Ocolumn);
+							break;
+						case 'a'://left
+							template[j].leftMove(Ocolumn);
+							break;
+						case 'w': //up
+							template[j].upMove(Orow);
+							break;
+						case 'x': //down
+							template[j].downMove(Orow);
+							break;
+						case 'e': //up right
+							template[j].upRight(Ocolumn,Orow); // NB!need to check this method again
+							break;
+						case 'q': //up left
+							template[j].upLeft(Ocolumn,Orow);
+							break;
+						case 'c': //right bottom
+							template[j].downRight(Ocolumn,Orow);
+							break;
+						case 'z': //left bottom
+							template[j].downLeft(Ocolumn,Orow);
+							break;
+					}
+				}
+				if(template[j].getMoves().length()<= index){
+					int count = index%(template[j].getMoves().length());
+					char move = template[j].getMoves().charAt(count);
+					switch(move){
+						case 'd': //right
+							template[j].rightMove(Ocolumn);
+							break;
+						case 'a'://left
+							template[j].leftMove(Ocolumn);
+							break;
+						case 'w': //up
+							template[j].upMove(Orow);
+							break;
+						case 'x': //down
+							template[j].downMove(Orow);
+							break;
+						case 'e': //up right
+							template[j].upRight(Ocolumn,Orow); // NB!need to check this method again
+							break;
+						case 'q': //up left
+							template[j].upLeft(Ocolumn,Orow);
+							break;
+						case 'c': //right bottom
+							template[j].downRight(Ocolumn,Orow);
+							break;
+						case 'z': //left bottom
+							template[j].downLeft(Ocolumn,Orow);
+							break;
+					}
+				}
+			}
+		}
+	}
+	private static void warriorBattle() {
+		boolean[][] tempt;
+		for (int i = 0; i < template.length; i++) {
+			tempt=UsefulMethods_23605383.WarriorNeighborhood(gameBoard,template[i].getPlayerRow(),template[i].getPlayerColumn());
+			for (int j = 0; j <tempt.length ; j++) {
+				for (int k = 0; k <tempt[j].length ; k++) {
+					if(tempt[j][k]){
+						for (int l = 0; l <template.length ; l++) {
+							if(template[l].getPlayerRow()==j && template[l].getPlayerColumn()==k){
+								if(template[i].getFightDefense() < template[l].getFightDefense()){
+									template[i].setHealth(template[i].getHealth()-template[l].getFightOffensive());
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	public static void printBoard( String[][] temp) {
     	for(int i=0;i<temp.length;i++) {
     		for(int j=0;j<temp[i].length;j++) {
     			System.out.print(temp[i][j]);
@@ -723,42 +921,12 @@ public class Game_23605383 {
 		}
 		return false;
 	}
-	public static void Stats(String[][] temp){
-		warrior = new Warrior_23605383[numberWarriows];
-		String check = "";
-		for (int i = 0; i <Orow ; i++) {
-			for (int j = 0; j < Ocolumn; j++) {
-				if (temp[i][j].length()>1){
-					System.out.println(temp[i][j]);
-					int count =1;
-					int index =3;
-					while(index < temp[i][j].length() && count < temp[i][j].length()-2){
-						check = temp[i][j].substring(count,index);
-						if (check.contains("S")){
-							warrior[Integer.parseInt(check.charAt(1)+"")] = stone[Integer.parseInt(check.charAt(1)+"")];
-							System.out.println(check);
-						}
-						if (check.contains("F")){
-							warrior[Integer.parseInt(check.charAt(1)+"")] = flame[Integer.parseInt(check.charAt(1)+"")];
-							System.out.println(check);
-						}
-						if (check.contains("A")){
-							warrior[Integer.parseInt(check.charAt(1)+"")] = air[Integer.parseInt(check.charAt(1)+"")];
-							System.out.println(check);
-						}
-						if (check.contains("W")){
-							warrior[Integer.parseInt(check.charAt(1)+"")] = water[Integer.parseInt(check.charAt(1)+"")];
-							System.out.println(check);
-							System.out.println("wATER");
-						}
-						index = index+2;
-						count = count+2;
-					}
-				}
+	public static void ageIncrement(){
+		for (int i = 0; i <template.length ; i++) {
+			if(template[i] != null){
+				template[i].incrementAge();
 			}
-			System.out.println();
 		}
-
 	}
 	public static void placeWarriors(){
 		for (int i = 0; i < stone.length ; i++) {
@@ -787,16 +955,172 @@ public class Game_23605383 {
 			for (int j = 0; j < temp[i].length ; j++) {
 				if(temp[i][j].length() >1){
 					if(UsefulMethods_23605383.NumberOfWarriors(temp[i][j]) >1){
-						System.out.print(UsefulMethods_23605383.NumberOfWarriors(temp[i][j]));
+						System.out.print(UsefulMethods_23605383.NumberOfWarriors(temp[i][j])+" ");
 					}else {
-						System.out.print(temp[i][j].charAt(1));
+						System.out.print(temp[i][j].charAt(1)+" ");
 					}
 				}else{
-					System.out.print(".");
+					System.out.print(". ");
 				}
 			}
 			System.out.println();
 		}
 	}
+	public static void convertInterface(Warrior_23605383[] temp){
+		for (int i = 0; i < numberWarriows ; i++) {
+			template[i] = (WarriorTypeInterface_23605383) temp[i];
+		}
+	}
+	public static void AddorRemoveHeath(){
+		boolean[][] check = new boolean[Orow][Ocolumn];
+		for (int i = 0; i <template.length ; i++) {
+			check=UsefulMethods_23605383.WarriorNeighborhood(gameBoard,template[i].getPlayerRow(),template[i].getPlayerColumn());
+			int countWater=0;
+			for (int j = 0; j <check.length ; j++) {
+				for (int k = 0; k <check[j].length ; k++) {
+					if(check[j][k]){
+						countWater = countWater + UsefulMethods_23605383.NumberOfWarrior(gameBoard[j][k]);
+					}
+				}
+			}
+			if (countWater >=1){
+				template[i].setHealth(template[i].getHealth()+3.0);
+			}else {
+				template[i].setHealth(template[i].getHealth()-0.5);
+			}
+			if(template[i].getType().equals("Water")){
+				template[i].setOffensePower(template[i].getOffensePower()+countWater); // adds 1% to warrior object offense power
+			}
+		}
 
+	}
+	public static void specialAbility(){
+		for (int i = 0; i <template.length ; i++) {
+			if(template[i].getHealth() <= 10){
+					specailAbilityCheck[i]= true;
+					template[i].performSpecialAbility();
+			}
+		}
+	}
+	public static void IncrementSpecialAbility(){
+		for (int i = 0; i <template.length ; i++) {
+			if(specailAbilityCheck[i]){
+				template[i].incrementCountSpecialAbility();
+			}
+		}
+	}
+	public static void specialAbilityCompleted(){
+		for (int i = 0; i <template.length ; i++) {
+			template[i].specialAbilityCompleted();
+		}
+	}
+	public static void defenseStrengthAdjust(){
+		/*
+		This method adjusts the defense strength of a warrior if there's the same type of warrior in the cell
+		 */
+		for (int i = 0; i <template.length ; i++) {
+			for (int j = 0; j <template.length ; j++) {
+				if(template[i].getPlayerRow()== template[j].getPlayerRow() && template[i].getPlayerColumn() == template[j].getPlayerColumn() && template[i].getType().equals(template[j].getType()) ){
+					template[i].setDefenseStrength(template[i].getDefenseStrength()+2);
+				}
+			}
+		}
+		//this removes the extra 2 because the above code includes the warrior itself
+		for (int i = 0; i <template.length ; i++) {
+			template[i].setDefenseStrength(template[i].getDefenseStrength()-2);
+		}
+	}
+	public static void defenseAndoffenseStrength(){
+		for (int i = 0; i <template.length ; i++) {
+			if(template[i] != null){
+				template[i].setFightDefense(template[i].getDefenseStrength());
+				template[i].setFightOffensive(template[i].getOffensePower());
+			}
+		}
+	}
+	public static void ageDefenseAdjust(){
+		/*
+		this method adjusts warrior's defense strength according to its age
+		 */
+		for (int i = 0; i <template.length ; i++) {
+			if(template[i] != null){
+				if(template[i].getAge()>15 && template[i].getAge()<=25){
+					if(template[i].getDefenseStrength()>70.0){
+						template[i].setDefenseStrength(70.0);
+					}
+				}
+				if(template[i].getAge()>25 && template[i].getAge()<= 50){
+					if(template[i].getDefenseStrength()>50){
+						template[i].setDefenseStrength(50);
+					}
+				}
+				if(template[i].getAge()>50){
+					if(template[i].getDefenseStrength()>30){
+						template[i].setDefenseStrength(30);
+					}
+				}
+			}
+		}
+	}
+	public static void water(){
+		String[][] temp= new String[Orow][Ocolumn];
+		for (int i = 0; i <Orow ; i++) {
+			for (int j = 0; j <Ocolumn ; j++) {
+				temp[i][j] = gameBoard[i][j];
+			}
+		}
+		boolean[][] checkWater;
+		int countingWater=0;
+		for (int i = 0; i < gameBoard.length; i++) {
+			for (int j = 0; j <gameBoard[i].length ; j++) {
+				if (temp[i][j].contains("w")){
+					countingWater=0;
+					checkWater = UsefulMethods_23605383.WarriorNeighborhood(temp,i,j);
+					for (int k = 0; k <Orow ; k++) {
+						for (int l = 0; l <Ocolumn ; l++) {
+							if(checkWater[k][l]){
+								if(temp[k][l].contains("w")){
+									countingWater++;
+								}
+							}
+						}
+					}
+					if(countingWater <= 1 || countingWater >= 4){
+						gameBoard[i][j] = gameBoard[i][j].replace("w","");
+					}
+				}
+				if(!temp[i][j].contains("w")){
+					countingWater=0;
+					checkWater = UsefulMethods_23605383.WarriorNeighborhood(gameBoard,i,j);
+					for (int k = 0; k <Orow ; k++) {
+						for (int l = 0; l <Ocolumn ; l++) {
+							if(checkWater[k][l]){
+								if(temp[k][l].contains("w")){
+									countingWater++;
+								}
+							}
+						}
+					}
+					if(countingWater == 3){
+						gameBoard[i][j] += "w";
+					}
+				}
+
+			}
+		}
+	}
+	public static void CheckZeroWarrior(){
+		//This method checks if there's no warrior on the grid
+		int countWarrior =0;
+		for (int i = 0; i <Orow ; i++) {
+			for (int j = 0; j < Ocolumn ; j++) {
+				countWarrior += UsefulMethods_23605383.NumberOfWarriors(gameBoard[i][j]);
+			}
+		}
+		if(countWarrior==0){
+			//it sets NoPiece variable as true
+			NoPiece = true;
+			System.out.println("No warriors are left!");
+		}
+	}
 }

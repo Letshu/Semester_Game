@@ -6,11 +6,18 @@ public class AirWarrior_23605383 extends Warrior_23605383 implements WarriorType
     public AirWarrior_23605383(int ID,int Age,double health,double offensePower,double defenseStrength,int weaponInventory,int Xvalue,int Yvalue,String moves,String name,String type) {
     	super(ID,Age,health,offensePower,defenseStrength,weaponInventory,Xvalue,Yvalue,moves,name,type);
     }
-
     public void performSpecialAbility() {
+        if (!this.isPerformedAbility()){
+            this.setPerformedAbility(true);
+            System.out.println("Special ability performed by air warrior!");
+            this.setHealth(this.getHealth()+30.0);
+        }
     }
-
     public void specialAbilityCompleted() {
+        if(this.isPerformedAbility()){
+            if(this.getCountSpecialAbility() ==3 ){
+                this.setHealth(this.getHealth()-30);
+            }
+        }
     }
-
 }
